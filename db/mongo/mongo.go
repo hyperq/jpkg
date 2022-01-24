@@ -16,7 +16,6 @@ var isconnect = false
 var errornum = 0
 
 func Init(uri string) {
-
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
@@ -32,7 +31,8 @@ func Init(uri string) {
 }
 
 type mongolog struct {
-	name string
+	name     string
+	database string
 }
 
 func (m *mongolog) Write(p []byte) (n int, err error) {
@@ -46,7 +46,7 @@ func (m *mongolog) Write(p []byte) (n int, err error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
-	_, err = Mongo.Database(config.Config.Mongo.Datebase).Collection(m.name).InsertOne(ctx, bsonlog)
+	_, err = Mongo.Database(m.database).Collection(m.name).InsertOne(ctx, bsonlog)
 	if err != nil {
 		errornum++
 		if (errornum) > 10 {
@@ -81,8 +81,9 @@ func task() {
 	}
 }
 
-func NewLog(name string) *mongolog {
+func NewLog(name, datebase string) *mongolog {
 	return &mongolog{
-		name: name,
+		name:     name,
+		database: datebase,
 	}
 }
