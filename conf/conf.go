@@ -11,6 +11,7 @@ type config struct {
 	Url       string
 	Port      string
 	Mode      string
+	Rate      bool
 	Database  map[string]database
 	Mongo     mongo
 	Redis     redis
@@ -18,6 +19,7 @@ type config struct {
 	WechatPay wechatPay
 	Alipay    alipay
 	Oss       map[string]oss
+	Sf        SF
 }
 
 // Config global config
