@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-contrib/sessions"
-
 	ginjwt "github.com/appleboy/gin-jwt/v2"
 )
 
@@ -37,23 +35,6 @@ func (c *Context) UnmarshalFromString(o interface{}) (err error) {
 	if err != nil {
 		return
 	}
-	return
-}
-
-// GetAdminID 根据jwt获取用户的id
-func (c *Context) GetAdminID() int {
-	claims := ginjwt.ExtractClaims(c.Context)
-	id, ok := claims[jwt.Auth.IdentityKey]
-	if !ok {
-		return 0
-	}
-	return int(id.(float64))
-}
-
-// GetSession 获取session
-func (c *Context) GetSession(key string) (user interface{}) {
-	session := sessions.Default(c.Copy())
-	user = session.Get(key)
 	return
 }
 

@@ -15,7 +15,7 @@ type RC struct {
 	mu sync.Mutex
 }
 
-func NewRC(option *redis.Options) (rc *RC, err error) {
+func New(option *redis.Options) (rc *RC, err error) {
 	redisclient := redis.NewClient(option)
 	_, err = redisclient.Ping(ctx).Result()
 	if err != nil {

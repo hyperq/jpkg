@@ -13,39 +13,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var errorLogger *zap.SugaredLogger
-
-var levelMap = map[string]zapcore.Level{
-	"debug":  zapcore.DebugLevel,
-	"info":   zapcore.InfoLevel,
-	"warn":   zapcore.WarnLevel,
-	"error":  zapcore.ErrorLevel,
-	"dpanic": zapcore.DPanicLevel,
-	"panic":  zapcore.PanicLevel,
-	"fatal":  zapcore.FatalLevel,
-}
-
-func getLoggerLevel(lvl string) zapcore.Level {
-	if level, ok := levelMap[lvl]; ok {
-		return level
-	}
-	return zapcore.InfoLevel
-}
-
-// GormSQLSql log init
-// var GormSQLLog *gormzap.Logger
 var sqlLogger *zap.Logger
 
-// SetSQLLog  set sql logto file
 func init() {
-	// fileName := "logs/sql.log"
-	level := getLoggerLevel("debug")
-	// syncWriter := zapcore.AddSync(&lumberjack.Logger{
-	// 	Filename: fileName,
-	// 	MaxSize:  20,
-	// 	// LocalTime: true,
-	// 	Compress: true,
-	// })
+	level := zapcore.DebugLevel
 
 	runMode := gin.Mode()
 	var encoder zapcore.EncoderConfig
@@ -56,12 +27,12 @@ func init() {
 		encoder.EncodeTime = zapcore.EpochTimeEncoder
 	}
 	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoder), zapcore.NewMultiWriteSyncer(zapcore.AddSync(mongo.NewLog("sql"))), zap.NewAtomicLevelAt(level),
+		zapcore.NewJSONEncoder(encoder), zapcore.NewMultiWriteSyncer(zapcore.AddSync(mongo.New("sql"))),
+		zap.NewAtomicLevelAt(level),
 	)
 	sqlLogger = zap.New(core)
 }
 
-// debugLogQueies debug log
 func debugLogQueies(query string, t time.Time, err error, args ...interface{}) {
 	l := new(logs)
 	// 0 1 query 2 dao 3

@@ -42,7 +42,7 @@ func Logger() gin.HandlerFunc {
 	return LoggerWithConfig(conf)
 }
 
-var mongolog = mongo.NewLog("access")
+var mongolog = mongo.New("access")
 
 // LoggerWithConfig instance a Logger middleware with config.
 func LoggerWithConfig(conf gin.LoggerConfig) gin.HandlerFunc {

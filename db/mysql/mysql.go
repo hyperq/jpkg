@@ -34,6 +34,7 @@ type Config struct {
 	ReadDSN []string // read data source name.
 	Active  int      // pool
 	Idle    int      // pool
+	mongodb string
 }
 
 // Rows struct
@@ -41,8 +42,7 @@ type Rows struct {
 	*sql.Rows
 }
 
-// NewMysql new db
-func NewMysql(conf Config) (db *DB, err error) {
+func New(conf Config) (db *DB, err error) {
 	db = new(DB)
 	db.writer, err = connect(conf.DSN, conf.Idle, conf.Active)
 	if err != nil {

@@ -1,10 +1,10 @@
 package sf
 
 import (
-	"github.com/hyperq/jpkg/tool/xhttp"
 	"crypto/md5"
 	"encoding/base64"
 	"errors"
+	"github.com/hyperq/jpkg/tool/xhttp"
 	"net/url"
 	"strconv"
 	"time"
@@ -47,7 +47,6 @@ func (h *SF) doProdPost(serviceCode, msgData string) (respdata string, err error
 	if h.Debug {
 		xlog.Debugf("SF_SERVICE: %s", serviceCode)
 		xlog.Debugf("SF_MSGDATA: %s", msgData)
-		//spew.Dump(req)
 	}
 	res, bs, errs := httpClient.Type(xhttp.TypeUrlencoded).Post(h.ApiUrl).SendStruct(req).EndBytes()
 	if len(errs) > 0 {
