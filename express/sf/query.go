@@ -41,7 +41,7 @@ type Routes struct {
 
 const queryRouteServiceCode = "EXP_RECE_SEARCH_ROUTES"
 
-func (h *SF) QueryRoute(req RouteReq) (resq Response, err error) {
+func (h *SFM) QueryRoute(req RouteReq) (resq Response, err error) {
 	msgdata, _ := jsoniter.MarshalToString(req)
 	respdata, err := h.doProdPost(queryRouteServiceCode, msgdata)
 	if err != nil {

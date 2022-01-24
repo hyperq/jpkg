@@ -34,7 +34,7 @@ type CommonResp struct {
 
 const requestOk = "A1000"
 
-func (h *SF) doProdPost(serviceCode, msgData string) (respdata string, err error) {
+func (h *SFM) doProdPost(serviceCode, msgData string) (respdata string, err error) {
 	httpClient := xhttp.NewClient()
 
 	var req CommonReq
