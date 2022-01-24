@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"github.com/hyperq/jpkg/conf"
 	"time"
 
 	"github.com/jasonlvhit/gocron"
@@ -15,27 +16,27 @@ var Mongo *mongo.Client
 var isconnect = false
 var errornum = 0
 
+// Init mongo 初始化
 func Init(uri string) {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	var err error
+	Mongo, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
 	}
-	Mongo = client
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
-	err = client.Ping(ctx, nil)
+	err = Mongo.Ping(ctx, nil)
 	if err != nil {
 		panic(err)
 	}
 	isconnect = true
 }
 
-type mongolog struct {
-	name     string
-	database string
+type ml struct {
+	name string
 }
 
-func (m *mongolog) Write(p []byte) (n int, err error) {
+func (m *ml) Write(p []byte) (n int, err error) {
 	if !isconnect {
 		return
 	}
@@ -46,7 +47,7 @@ func (m *mongolog) Write(p []byte) (n int, err error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
-	_, err = Mongo.Database(m.database).Collection(m.name).InsertOne(ctx, bsonlog)
+	_, err = Mongo.Database(conf.Config.Mongo.Datebase).Collection(m.name).InsertOne(ctx, bsonlog)
 	if err != nil {
 		errornum++
 		if (errornum) > 10 {
@@ -81,9 +82,8 @@ func task() {
 	}
 }
 
-func NewLog(name, datebase string) *mongolog {
-	return &mongolog{
-		name:     name,
-		database: datebase,
+func New(name string) *ml {
+	return &ml{
+		name: name,
 	}
 }

@@ -13,30 +13,13 @@ import (
 var errorLogger *zap.SugaredLogger
 var errorLogger2 *zap.SugaredLogger
 
-var levelMap = map[string]zapcore.Level{
-	"debug":  zapcore.DebugLevel,
-	"info":   zapcore.InfoLevel,
-	"warn":   zapcore.WarnLevel,
-	"error":  zapcore.ErrorLevel,
-	"dpanic": zapcore.DPanicLevel,
-	"panic":  zapcore.PanicLevel,
-	"fatal":  zapcore.FatalLevel,
-}
-
-func getLoggerLevel(lvl string) zapcore.Level {
-	if level, ok := levelMap[lvl]; ok {
-		return level
-	}
-	return zapcore.InfoLevel
-}
-
 func init() {
 	errorLogger = newlog(1)
 	errorLogger2 = newlog(2)
 }
 
 func newlog(skip int) *zap.SugaredLogger {
-	level := getLoggerLevel("debug")
+	level := zapcore.DebugLevel
 	runMode := gin.Mode()
 	var encoder zapcore.EncoderConfig
 	if runMode == "debug" {
@@ -47,7 +30,8 @@ func newlog(skip int) *zap.SugaredLogger {
 	}
 
 	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoder), zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(mongo.NewLog("log"))),
+		zapcore.NewJSONEncoder(encoder),
+		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(mongo.New("log"))),
 		zap.NewAtomicLevelAt(level),
 	)
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(skip))
@@ -69,17 +53,14 @@ func Info(args ...interface{}) {
 	errorLogger.Info(args...)
 }
 
-// Infof Infof
 func Infof(template string, args ...interface{}) {
 	errorLogger.Infof(template, args...)
 }
 
-// Warn Warn
 func Warn(args ...interface{}) {
 	errorLogger.Warn(args...)
 }
 
-// Warnf Warnf
 func Warnf(template string, args ...interface{}) {
 	errorLogger.Warnf(template, args...)
 }
@@ -104,7 +85,6 @@ func DPanic(args ...interface{}) {
 	errorLogger.DPanic(args...)
 }
 
-// DPanicf DPanicf
 func DPanicf(template string, args ...interface{}) {
 	errorLogger.DPanicf(template, args...)
 }
@@ -114,7 +94,6 @@ func Panic(args ...interface{}) {
 	errorLogger.Panic(args...)
 }
 
-// Panicf Panicf
 func Panicf(template string, args ...interface{}) {
 	errorLogger.Panicf(template, args...)
 }
@@ -124,7 +103,6 @@ func Fatal(args ...interface{}) {
 	errorLogger.Fatal(args...)
 }
 
-// Fatalf Fatalf
 func Fatalf(template string, args ...interface{}) {
 	errorLogger.Fatalf(template, args...)
 }

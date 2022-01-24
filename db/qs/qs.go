@@ -12,7 +12,6 @@ import (
 
 var DefaultPageSize = 10
 
-// QS query
 type QuerySet struct {
 	where        map[string]interface{}
 	sortarray    []string
