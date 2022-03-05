@@ -14,4 +14,5 @@ type database struct {
 type mongo struct {
 	Uri      string
 	Datebase string
+	Type     int // 0 mongo 1 file
 }

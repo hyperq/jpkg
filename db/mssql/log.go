@@ -1,7 +1,8 @@
-package mysql
+package mssql
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/hyperq/jpkg/db/mongo"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
@@ -10,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -30,10 +30,10 @@ func LogInit(t int) {
 	}
 	var eng io.Writer
 	if t == 0 {
-		eng = mongo.New("mysql")
+		eng = mongo.New("mssql")
 	} else {
 		eng = &lumberjack.Logger{
-			Filename: "logs/mysql.log",
+			Filename: "logs/mssql.log",
 			MaxSize:  20,
 			// LocalTime: true,
 			Compress: true,
@@ -46,6 +46,7 @@ func LogInit(t int) {
 	sqlLogger = zap.New(core)
 }
 
+// debugLogQueies debug log
 func debugLogQueies(query string, t time.Time, err error, args ...interface{}) {
 	l := new(logs)
 	// 0 1 query 2 dao 3
@@ -65,9 +66,9 @@ func debugLogQueies(query string, t time.Time, err error, args ...interface{}) {
 	l.values = getFormattedValues(args)
 	if err != nil {
 		l.err = fmt.Sprint(err)
-		sqlLogger.Error("db", l.toZapFields()...)
+		sqlLogger.Info("msdb", l.toZapFields()...)
 	} else {
-		sqlLogger.Info("db", l.toZapFields()...)
+		sqlLogger.Info("msdb", l.toZapFields()...)
 	}
 }
 

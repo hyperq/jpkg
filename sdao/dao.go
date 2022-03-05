@@ -3,18 +3,15 @@ package dao
 import (
 	"database/sql"
 	"github.com/hyperq/jpkg/db"
+	"github.com/hyperq/jpkg/db/mssql"
 	"strings"
 
-	"github.com/hyperq/jpkg/db/mysql"
 	"github.com/hyperq/jpkg/db/qs"
 	"github.com/hyperq/jpkg/log"
-	"github.com/hyperq/jpkg/tool"
-
-	"github.com/didi/gendry/scanner"
 )
 
 func Query(sql string, params ...interface{}) (*sql.Rows, error) {
-	return db.Db.Query(sql, params...)
+	return db.Msdb.Query(sql, params...)
 }
 
 func QueryByQs(sql string, q *qs.QuerySet, data interface{}) error {
@@ -28,43 +25,27 @@ func QueryByQs(sql string, q *qs.QuerySet, data interface{}) error {
 	if err != nil {
 		return err
 	}
-	return scanner.ScanClose(rows, data)
+	return mssql.ScanClose(rows, data)
 }
 
 func Exec(sql string, params ...interface{}) (sql.Result, error) {
-	return db.Db.Exec(sql, params...)
+	return db.Msdb.Exec(sql, params...)
 }
 
-func Insert(res interface{}) (int64, error) {
-	return db.Db.Insert(res)
+func Insert(res interface{}) error {
+	return db.Msdb.Insert(res)
 }
 
-func Update(res interface{}) (int64, error) {
-	return db.Db.Update(res)
+func Update(res interface{}) (string, error) {
+	return db.Msdb.Update(res)
 }
 
-func InsertOrUpdate(res interface{}) (int64, error) {
-	return db.Db.InsertOrUpdate(res)
+func InsertOrUpdate(res interface{}) (string, error) {
+	return db.Msdb.InsertOrUpdate(res)
 }
 
-func StatusChange(table string, id, version interface{}, key, status string) error {
-	_, err := Exec(
-		"UPDATE "+table+" SET "+key+" = ?,modify_time = ?,version = version + 1 WHERE id = ? AND version = ?",
-		status, tool.GetNows(), id, version,
-	)
-	return err
-}
-
-func StatusChangeShop(table string, id, version, shopid interface{}, key, status string) error {
-	_, err := Exec(
-		"UPDATE "+table+" SET "+key+" = ?,modify_time = ?,version = version + 1 WHERE id = ? AND version = ? AND shop_id=?",
-		status, tool.GetNows(), id, version, shopid,
-	)
-	return err
-}
-
-func Begin() (*mysql.Tx, error) {
-	return db.Db.Begin()
+func Begin() (*mssql.Tx, error) {
+	return db.Msdb.Begin()
 }
 
 type count struct {
@@ -84,7 +65,7 @@ func Count(table string, q *qs.QuerySet) (num int) {
 		return
 	}
 	var data []count
-	err = scanner.ScanClose(rows, &data)
+	err = mssql.ScanClose(rows, &data)
 	if err != nil {
 		log.Error2(err)
 		return
@@ -112,7 +93,7 @@ func Sum(table, key string, q *qs.QuerySet) (sumnum float64) {
 		return
 	}
 	var data []sum
-	err = scanner.ScanClose(rows, &data)
+	err = mssql.ScanClose(rows, &data)
 	if err != nil {
 		log.Error2(err)
 		return
@@ -131,7 +112,7 @@ func SumSql(sql string, q *qs.QuerySet) (sumnum float64) {
 		return
 	}
 	var data []sum
-	err = scanner.ScanClose(rows, &data)
+	err = mssql.ScanClose(rows, &data)
 	if err != nil {
 		log.Error2(err)
 		return
@@ -149,7 +130,7 @@ func SumSqlC(sql string, params ...interface{}) (sumnum float64) {
 		return
 	}
 	var data []sum
-	err = scanner.ScanClose(rows, &data)
+	err = mssql.ScanClose(rows, &data)
 	if err != nil {
 		log.Error2(err)
 		return
@@ -168,7 +149,7 @@ func Countsql(sql string, q *qs.QuerySet) (num int) {
 		return
 	}
 	var data []count
-	err = scanner.ScanClose(rows, &data)
+	err = mssql.ScanClose(rows, &data)
 	if err != nil {
 		log.Error2(err)
 		return
@@ -185,7 +166,7 @@ func CountsqlC(sql string, params ...interface{}) (num int) {
 		return
 	}
 	var data []count
-	err = scanner.ScanClose(rows, &data)
+	err = mssql.ScanClose(rows, &data)
 	if err != nil {
 		log.Error2(err)
 		return
