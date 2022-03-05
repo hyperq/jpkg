@@ -2,23 +2,25 @@ package log
 
 import (
 	"github.com/hyperq/jpkg/db/mongo"
+	"io"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // errorLogger
 var errorLogger *zap.SugaredLogger
 var errorLogger2 *zap.SugaredLogger
 
-func init() {
-	errorLogger = newlog(1)
-	errorLogger2 = newlog(2)
+func Init(t int) {
+	errorLogger = newlog(1, t)
+	errorLogger2 = newlog(2, t)
 }
 
-func newlog(skip int) *zap.SugaredLogger {
+func newlog(skip int, t int) *zap.SugaredLogger {
 	level := zapcore.DebugLevel
 	runMode := gin.Mode()
 	var encoder zapcore.EncoderConfig
@@ -28,10 +30,20 @@ func newlog(skip int) *zap.SugaredLogger {
 		encoder = zap.NewProductionEncoderConfig()
 		encoder.EncodeTime = zapcore.EpochTimeEncoder
 	}
-
+	var eng io.Writer
+	if t == 0 {
+		eng = mongo.New("log")
+	} else {
+		eng = &lumberjack.Logger{
+			Filename: "logs/backend.log",
+			MaxSize:  20,
+			// LocalTime: true,
+			Compress: true,
+		}
+	}
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoder),
-		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(mongo.New("log"))),
+		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(eng)),
 		zap.NewAtomicLevelAt(level),
 	)
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(skip))
