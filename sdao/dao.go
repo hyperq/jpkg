@@ -1,27 +1,42 @@
-package dao
+package sdao
 
 import (
 	"database/sql"
-	"github.com/hyperq/jpkg/db"
+	"fmt"
 	"github.com/hyperq/jpkg/db/mssql"
-	"strings"
-
 	"github.com/hyperq/jpkg/db/qs"
 	"github.com/hyperq/jpkg/log"
 )
 
 func Query(sql string, params ...interface{}) (*sql.Rows, error) {
-	return db.Msdb.Query(sql, params...)
+	return Msdb.Query(sql, params...)
 }
 
-func QueryByQs(sql string, q *qs.QuerySet, data interface{}) error {
-	wh, params, others := q.Format()
-	s := "a.*"
-	if len(q.Select) > 0 {
-		s = strings.Join(q.Select, ",")
+func QueryByQs(table, pkkey string, q *qs.QuerySet, data interface{}) error {
+	wh, params, others := q.Format2()
+	var sqls string
+	if q.Limit < 0 || q.Offset < 0 {
+		sqls = fmt.Sprintf("SELECT a.* FROM %s a", table)
+		if wh != "" {
+			sqls += " WHERE " + wh
+		}
+		if others != "" {
+			sqls += " " + others
+		}
+	} else {
+		if wh == "" {
+			sqls = fmt.Sprintf(
+				`SELECT TOP %v a.* FROM %s as a WHERE a.%v not in (SELECT TOP %v %s FROM %s %s) %s`, q.Limit,
+				table, pkkey, q.Offset, pkkey, table, q.OrderBy, q.OrderBy,
+			)
+		} else {
+			sqls = fmt.Sprintf(
+				`SELECT TOP %v a.* FROM %s as a WHERE `+wh+` and a.%v not in (SELECT TOP %v %s FROM %s %s) %s`, q.Limit,
+				table, pkkey, q.Offset, pkkey, table, q.OrderBy, q.OrderBy,
+			)
+		}
 	}
-	sql = strings.Replace(sql, "{{select}}", s, 1)
-	rows, err := Query(sql+wh+others, params...)
+	rows, err := Query(sqls, params...)
 	if err != nil {
 		return err
 	}
@@ -29,23 +44,23 @@ func QueryByQs(sql string, q *qs.QuerySet, data interface{}) error {
 }
 
 func Exec(sql string, params ...interface{}) (sql.Result, error) {
-	return db.Msdb.Exec(sql, params...)
+	return Msdb.Exec(sql, params...)
 }
 
 func Insert(res interface{}) error {
-	return db.Msdb.Insert(res)
+	return Msdb.Insert(res)
 }
 
 func Update(res interface{}) (string, error) {
-	return db.Msdb.Update(res)
+	return Msdb.Update(res)
 }
 
 func InsertOrUpdate(res interface{}) (string, error) {
-	return db.Msdb.InsertOrUpdate(res)
+	return Msdb.InsertOrUpdate(res)
 }
 
 func Begin() (*mssql.Tx, error) {
-	return db.Msdb.Begin()
+	return Msdb.Begin()
 }
 
 type count struct {

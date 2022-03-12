@@ -106,6 +106,33 @@ func insert(t reflect.Type, v reflect.Value, tablename string) (query string, pa
 	return
 }
 
+func insert2(t reflect.Type, v reflect.Value, tablename string) (query string, param []interface{}) {
+	var field []string
+	for k := 0; k < t.NumField(); k++ {
+		tagv := t.Field(k).Tag.Get(Tag)
+		tagvs := strings.Split(tagv, separate)
+		if strings.Index(tagv, pkindex) > -1 {
+			continue
+		}
+		vs := tagvs[0]
+		if vs != "" {
+			field = append(field, vs)
+			switch v.Field(k).Interface().(type) {
+			case time.Time:
+				param = append(param, v.Field(k).Interface().(time.Time).Format(timeDefaultFormat))
+			default:
+				param = append(param, v.Field(k).Interface())
+			}
+		}
+	}
+	is := insertstruct{
+		keys:   strings.Join(field, ","),
+		length: len(field),
+	}
+	query = "INSERT INTO " + tablename + " (" + is.keys + ") VALUES (?" + strings.Repeat(",?", is.length-1) + ")"
+	return
+}
+
 func update(t reflect.Type, v reflect.Value, tableName string) (pk string, query string, param []interface{}) {
 	structname := t.Name()
 	is, okf := updatemap[structname]

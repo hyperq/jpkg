@@ -68,6 +68,16 @@ func (db *DB) Insert(obj interface{}) (err error) {
 	_, err = db.Exec(query, params...)
 	return
 }
+func (db *DB) Insert2(obj interface{}) (err error) {
+	t := reflect.TypeOf(obj)
+	v := reflect.ValueOf(obj)
+	t = t.Elem()
+	v = v.Elem()
+	tableName := getTableName(t, v)
+	query, params := insert2(t, v, tableName)
+	_, err = db.Exec(query, params...)
+	return
+}
 
 // Update
 func (db *DB) Update(obj interface{}) (id string, err error) {
@@ -93,6 +103,25 @@ func (db *DB) InsertOrUpdate(obj interface{}) (id string, err error) {
 	var params []interface{}
 	if pk == "" {
 		query, params = insert(t, v, tableName)
+	} else {
+		id, query, params = update(t, v, tableName)
+	}
+	_, err = db.Exec(query, params...)
+	return
+}
+
+// InsertOrUpdate2 InsertOrUpdate
+func (db *DB) InsertOrUpdate2(obj interface{}) (id string, err error) {
+	t := reflect.TypeOf(obj)
+	v := reflect.ValueOf(obj)
+	t = t.Elem()
+	v = v.Elem()
+	tableName := getTableName(t, v)
+	_, pk := getPk(t, v)
+	var query string
+	var params []interface{}
+	if pk == "" {
+		query, params = insert2(t, v, tableName)
 	} else {
 		id, query, params = update(t, v, tableName)
 	}

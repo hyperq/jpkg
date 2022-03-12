@@ -53,6 +53,18 @@ func (tx *Tx) Insert(obj interface{}) (err error) {
 	return
 }
 
+// Insert2 insert
+func (tx *Tx) Insert2(obj interface{}) (err error) {
+	t := reflect.TypeOf(obj)
+	v := reflect.ValueOf(obj)
+	t = t.Elem()
+	v = v.Elem()
+	tableName := getTableName(t, v)
+	query, params := insert2(t, v, tableName)
+	_, err = tx.Exec(query, params...)
+	return
+}
+
 // Insert insert
 func (tx *Tx) Update(obj interface{}) (id string, err error) {
 	t := reflect.TypeOf(obj)
