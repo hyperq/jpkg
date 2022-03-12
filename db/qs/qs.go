@@ -131,6 +131,12 @@ func New(initquery ...interface{}) *QuerySet {
 	return qs
 }
 
+func New2(initquery ...interface{}) *QuerySet {
+	qs := &QuerySet{where: make(map[string]interface{}), Limit: 1}
+	qs.init(initquery...)
+	return qs
+}
+
 func (q *QuerySet) init(initquery ...interface{}) {
 	if len(initquery)%2 == 1 {
 		panic("传入参数必须是偶数个")
@@ -154,6 +160,22 @@ func (q *QuerySet) Format() (w string, p []interface{}, other string) {
 	if q.formatwhere == "" {
 		w, p = q.FormatWhere()
 		other = q.FormatOther()
+		q.formatother = other
+		q.formatwhere = w
+		q.formatparams = p
+	} else {
+		w = q.formatwhere
+		p = q.formatparams
+		other = q.formatother
+	}
+	return
+}
+
+// Format format Qs struct
+func (q *QuerySet) Format2() (w string, p []interface{}, other string) {
+	if q.formatwhere == "" {
+		w, p = q.FormatWhere2()
+		other = q.FormatOther2()
 		q.formatother = other
 		q.formatwhere = w
 		q.formatparams = p
@@ -225,6 +247,57 @@ func (q *QuerySet) FormatWhere() (w string, p []interface{}) {
 	w += strings.Join(ws, " and ")
 	return
 }
+func (q *QuerySet) FormatWhere2() (w string, p []interface{}) {
+	var ws []string
+	for i := range q.sortarray {
+		v, ok := q.where[q.sortarray[i]]
+		if ok {
+			ws = append(ws, q.sortarray[i])
+			if v != false {
+				switch t := v.(type) {
+				case []interface{}:
+					p = append(p, t...)
+				case []string:
+					for _, tnode := range t {
+						p = append(p, tnode)
+					}
+				case []int:
+					for _, tnode := range t {
+						p = append(p, tnode)
+					}
+				case []int8:
+					for _, tnode := range t {
+						p = append(p, tnode)
+					}
+				case []int16:
+					for _, tnode := range t {
+						p = append(p, tnode)
+					}
+				case []int32:
+					for _, tnode := range t {
+						p = append(p, tnode)
+					}
+				case []int64:
+					for _, tnode := range t {
+						p = append(p, tnode)
+					}
+				case []float32:
+					for _, tnode := range t {
+						p = append(p, tnode)
+					}
+				case []float64:
+					for _, tnode := range t {
+						p = append(p, tnode)
+					}
+				default:
+					p = append(p, t)
+				}
+			}
+		}
+	}
+	w += strings.Join(ws, " and ")
+	return
+}
 
 func (q *QuerySet) FormatOther() (fs string) {
 	if q.GroupBy != "" {
@@ -237,6 +310,19 @@ func (q *QuerySet) FormatOther() (fs string) {
 		fs += " ORDER BY " + q.OrderBy
 	}
 	fs += limit(q.Limit, q.Offset)
+	return
+}
+
+func (q *QuerySet) FormatOther2() (fs string) {
+	if q.GroupBy != "" {
+		fs += " GROUP BY " + q.GroupBy
+	}
+	if q.Having != "" {
+		fs += " HAVING " + q.Having
+	}
+	if q.OrderBy != "" {
+		fs += " ORDER BY " + q.OrderBy
+	}
 	return
 }
 
@@ -298,6 +384,22 @@ func (q *QuerySet) Paging(c context) *QuerySet {
 		q.OrderBy = orderby
 	} else {
 		q.OrderBy = "a.id desc"
+	}
+	return q
+}
+
+func (q *QuerySet) Paging2(c context) *QuerySet {
+	page := c.Query("current")
+	pageSize := c.Query("pageSize")
+	pageno, _ := strconv.Atoi(page)
+	limit, _ := strconv.Atoi(pageSize)
+	if limit < 1 {
+		limit = 10
+	}
+	q.Offset = pagechange(pageno, limit)
+	q.Limit = limit
+	if orderby := c.Query("orderby"); orderby != "" {
+		q.OrderBy = orderby
 	}
 	return q
 }
@@ -415,8 +517,16 @@ func Auto(c context, initquery ...interface{}) *QuerySet {
 	return New(initquery...).Paging(c).ParseQuery(c)
 }
 
+func Auto2(c context, initquery ...interface{}) *QuerySet {
+	return New2(initquery...).Paging2(c).ParseQuery(c)
+}
+
 func (q *QuerySet) Auto(c context, initquery ...interface{}) *QuerySet {
 	return New(initquery...).Paging(c).ParseQuery(c)
+}
+
+func (q *QuerySet) Auto2(c context, initquery ...interface{}) *QuerySet {
+	return New2(initquery...).Paging2(c).ParseQuery(c)
 }
 
 func (q *QuerySet) SetArray(c context, s ...string) {

@@ -1,11 +1,9 @@
-package db
+package dao
 
 import (
 	"github.com/go-redis/redis/v8"
 	"github.com/hyperq/jpkg/cache"
 	"github.com/hyperq/jpkg/conf"
-	"github.com/hyperq/jpkg/dao"
-	"github.com/hyperq/jpkg/db/mssql"
 	"github.com/hyperq/jpkg/log"
 	"time"
 	"unsafe"
@@ -18,7 +16,6 @@ import (
 )
 
 var Db *mysql.DB
-var Msdb *mssql.DB
 
 // Init load DB
 func Init() {
@@ -40,24 +37,10 @@ func Init() {
 		}
 		mysql.LogInit(conf.Config.Mongo.Type)
 	}
-	if len(conf.Config.Database["mswrite"].DSN) != 0 {
-		Msdb, err = mssql.New(
-			mssql.Config{
-				DSN:     conf.Config.Database["write"].DSN[0],
-				ReadDSN: conf.Config.Database["read"].DSN,
-				Active:  conf.Config.Database["read"].Active,
-				Idle:    conf.Config.Database["read"].Idle,
-			},
-		)
-		if err != nil {
-			panic(err)
-		}
-		mssql.LogInit(conf.Config.Mongo.Type)
-	}
 
 	if conf.Config.Redis.Addr != "" {
 		// redis
-		dao.RC, err = cache.New(
+		RC, err = cache.New(
 			&redis.Options{
 				Addr:     conf.Config.Redis.Addr,
 				Password: conf.Config.Redis.Password,
@@ -67,11 +50,11 @@ func Init() {
 		if err != nil {
 			panic(err)
 		}
-		keys, err := dao.RC.KEYS(conf.Config.AppName + "*")
+		keys, err := RC.KEYS(conf.Config.AppName + "*")
 		if err != nil {
 			log.Error(err)
 		}
-		err = dao.RC.DEL(keys...)
+		err = RC.DEL(keys...)
 		if len(keys) > 0 {
 			if err != nil {
 				log.Error(err)

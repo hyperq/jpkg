@@ -1,21 +1,28 @@
-package dao
+package sdao
 
 import (
 	"fmt"
-	"github.com/hyperq/jpkg/conf"
-	"reflect"
-	"strconv"
-	"sync"
-
 	"github.com/hyperq/jpkg/cache"
+	"github.com/hyperq/jpkg/conf"
 	"github.com/hyperq/jpkg/db/qs"
 	"github.com/hyperq/jpkg/log"
+	"reflect"
+	"strconv"
+	"strings"
+	"sync"
 
 	jsoniter "github.com/json-iterator/go"
 )
 
 var tablemap = sync.Map{}
 var RC *cache.RC
+
+var (
+	Tag       = "gorm"
+	TableName = "TableName"
+	separate  = ";"
+	pkindex   = separate + "pk"
+)
 
 func ClearCache(tablename string, id interface{}) {
 	ClearListCache(tablename)
@@ -58,40 +65,57 @@ func ClearOneCache(tablename string, id interface{}) {
 
 var empthv = reflect.Value{}
 
-func GetTableName(t reflect.Type) string {
+var pkx map[string]string
+var lockp sync.Mutex
+
+func GetTableName(t reflect.Type) (table, pkkey string) {
 	structname := t.Name()
 	if tablenamecache, ok := tablemap.Load(structname); ok {
-		return tablenamecache.(string)
+		table = tablenamecache.(string)
+	} else {
+		v := reflect.New(t)
+		m := v.MethodByName("TableName")
+		if m != empthv {
+			tablename := m.Call([]reflect.Value{})[0].String()
+			tablemap.Store(structname, tablename)
+			table = tablename
+		}
 	}
-	v := reflect.New(t)
-	m := v.MethodByName("TableName")
-	if m != empthv {
-		tablename := m.Call([]reflect.Value{})[0].String()
-		tablemap.Store(structname, tablename)
-		return tablename
+	kc, ok := pkx[structname]
+	if !ok {
+		for k := 0; k < t.NumField(); k++ {
+			tagv := t.Field(k).Tag.Get(Tag)
+			if strings.Index(tagv, pkindex) > -1 {
+				pkkey = strings.Replace(tagv, pkindex, "", -1)
+				lockp.Lock()
+				pkx[structname] = pkkey
+				lockp.Unlock()
+				break
+			}
+		}
+	} else {
+		pkkey = kc
 	}
-	return structname
+	return
 }
 
 func FindByID(id interface{}, obj interface{}) (err error) {
 	t := reflect.TypeOf(obj)
 	t = t.Elem()
-	tableName := GetTableName(t)
-	q := qs.New().EQ("id", id)
-	sql := "SELECT a.* FROM " + tableName + " a"
-	return QueryByQs(sql, q, obj)
+	tableName, pkkey := GetTableName(t)
+	q := qs.New2().EQ(pkkey, id).LIMIT(-1)
+	return QueryByQs(tableName, pkkey, q, obj)
 }
 
 func FindByIDCache(id interface{}, obj interface{}) (err error) {
 	t := reflect.TypeOf(obj)
 	t = t.Elem()
-	tableName := GetTableName(t)
+	tableName, pkkey := GetTableName(t)
 	cachekey := conf.Config.AppName + tableName + "-d" + fmt.Sprint(id)
 	res, err := RC.GET(cachekey)
 	if err != nil {
-		q := qs.New().EQ("id", id)
-		sql := "SELECT a.* FROM " + tableName + " a"
-		err = QueryByQs(sql, q, obj)
+		q := qs.New2().EQ("id", id).LIMIT(-1)
+		err = QueryByQs(tableName, pkkey, q, obj)
 		if err != nil {
 			return
 		}
@@ -110,9 +134,8 @@ func Finds(q *qs.QuerySet, obj interface{}) (err error) {
 	t := reflect.TypeOf(obj)
 	t = t.Elem()
 	t = t.Elem()
-	tableName := GetTableName(t)
-	sql := "SELECT a.* FROM " + tableName + " a"
-	return QueryByQs(sql, q, obj)
+	tableName, pkkey := GetTableName(t)
+	return QueryByQs(tableName, pkkey, q, obj)
 }
 
 func FindsCache(q *qs.QuerySet, obj interface{}) (err error) {
@@ -120,12 +143,11 @@ func FindsCache(q *qs.QuerySet, obj interface{}) (err error) {
 	for t.Kind() == reflect.Ptr || t.Kind() == reflect.Slice {
 		t = t.Elem()
 	}
-	tableName := GetTableName(t)
+	tableName, pkkey := GetTableName(t)
 	cachekey := conf.Config.AppName + q.FormatCache(tableName+"-s")
 	res, err := RC.GET(cachekey)
 	if err != nil {
-		sql := "SELECT a.* FROM " + tableName + " a"
-		err = QueryByQs(sql, q, obj)
+		err = QueryByQs(tableName, pkkey, q, obj)
 		if err != nil {
 			return
 		}
@@ -138,79 +160,23 @@ func FindsCache(q *qs.QuerySet, obj interface{}) (err error) {
 	} else {
 		err = jsoniter.UnmarshalFromString(res, obj)
 	}
-	return
-}
-
-func FindsCacheByTableName(q *qs.QuerySet, obj interface{}, tableName string) (err error) {
-	cachekey := conf.Config.AppName + q.FormatCache(tableName+"-s")
-	res, err := RC.GET(cachekey)
-	if err != nil {
-		sql := "SELECT a.* FROM " + tableName + " a"
-		err = QueryByQs(sql, q, obj)
-		if err != nil {
-			return
-		}
-		res, err = jsoniter.MarshalToString(obj)
-		if err != nil {
-			return
-		}
-		err = RC.SET(cachekey, res, 600)
-		return
-	} else {
-		err = jsoniter.UnmarshalFromString(res, obj)
-	}
-	return
-}
-
-func FindsByTableName(q *qs.QuerySet, obj interface{}, tableName string) (err error) {
-	sql := "SELECT a.* FROM " + tableName + " a"
-	err = QueryByQs(sql, q, obj)
 	return
 }
 
 func FindByKey(key string, value interface{}, obj interface{}) (err error) {
 	t := reflect.TypeOf(obj)
 	t = t.Elem()
-	tableName := GetTableName(t)
-	q := qs.New().EQ(key, value)
-	sql := "SELECT a.* FROM " + tableName + " a"
-	return QueryByQs(sql, q, obj)
+	tableName, pkkey := GetTableName(t)
+	q := qs.New2().EQ(key, value).LIMIT(-1)
+	return QueryByQs(tableName, pkkey, q, obj)
 }
 
 func Find(q *qs.QuerySet, obj interface{}) (err error) {
 	t := reflect.TypeOf(obj)
 	t = t.Elem()
-	tableName := GetTableName(t)
-	sql := "SELECT a.* FROM " + tableName + " a"
-	return QueryByQs(sql, q, obj)
-}
-
-func FindCustom(sql string, q *qs.QuerySet, obj interface{}) (err error) {
-	log.Debug(sql)
-	return QueryByQs(sql, q, obj)
-}
-
-func FindsCacheCustom(sql string, q *qs.QuerySet, obj interface{}) (err error) {
-	t := reflect.TypeOf(obj)
-	t = t.Elem()
-	t = t.Elem()
-	tableName := GetTableName(t)
-	cachekey := conf.Config.AppName + q.FormatCache(tableName+"-c")
-	res, err := RC.GET(cachekey)
-	if err != nil {
-		err = QueryByQs(sql, q, obj)
-		if err != nil {
-			return
-		}
-		res, err = jsoniter.MarshalToString(obj)
-		if err != nil {
-			return
-		}
-		err = RC.SET(cachekey, res, 600)
-		return
-	}
-	err = jsoniter.UnmarshalFromString(res, obj)
-	return
+	tableName, pkkey := GetTableName(t)
+	q.LIMIT(-1)
+	return QueryByQs(tableName, pkkey, q, obj)
 }
 
 // CountCache 将count存入缓存

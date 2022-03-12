@@ -2,7 +2,6 @@ package dao
 
 import (
 	"database/sql"
-	"github.com/hyperq/jpkg/db"
 	"strings"
 
 	"github.com/hyperq/jpkg/db/mysql"
@@ -14,7 +13,7 @@ import (
 )
 
 func Query(sql string, params ...interface{}) (*sql.Rows, error) {
-	return db.Db.Query(sql, params...)
+	return Db.Query(sql, params...)
 }
 
 func QueryByQs(sql string, q *qs.QuerySet, data interface{}) error {
@@ -32,19 +31,19 @@ func QueryByQs(sql string, q *qs.QuerySet, data interface{}) error {
 }
 
 func Exec(sql string, params ...interface{}) (sql.Result, error) {
-	return db.Db.Exec(sql, params...)
+	return Db.Exec(sql, params...)
 }
 
 func Insert(res interface{}) (int64, error) {
-	return db.Db.Insert(res)
+	return Db.Insert(res)
 }
 
 func Update(res interface{}) (int64, error) {
-	return db.Db.Update(res)
+	return Db.Update(res)
 }
 
 func InsertOrUpdate(res interface{}) (int64, error) {
-	return db.Db.InsertOrUpdate(res)
+	return Db.InsertOrUpdate(res)
 }
 
 func StatusChange(table string, id, version interface{}, key, status string) error {
@@ -64,7 +63,7 @@ func StatusChangeShop(table string, id, version, shopid interface{}, key, status
 }
 
 func Begin() (*mysql.Tx, error) {
-	return db.Db.Begin()
+	return Db.Begin()
 }
 
 type count struct {
