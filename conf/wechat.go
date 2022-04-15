@@ -1,8 +1,10 @@
 package conf
 
 type wechatInfo struct {
-	AppID     string
-	AppSecret string
+	AppID          string
+	AppSecret      string
+	Token          string
+	EncodingAESKey string
 }
 
 type wechatPay struct {
