@@ -36,9 +36,11 @@ func Init() {
 	if oa, ok := conf.Config.Wechat["oa"]; ok {
 		Oa = wechat.NewWechat().GetOfficialAccount(
 			&oacnf.Config{
-				AppID:     oa.AppID,
-				AppSecret: oa.AppSecret,
-				Cache:     Cache,
+				AppID:          oa.AppID,
+				AppSecret:      oa.AppSecret,
+				Token:          oa.Token,
+				EncodingAESKey: oa.EncodingAESKey,
+				Cache:          Cache,
 			},
 		)
 	}
